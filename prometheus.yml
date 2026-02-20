@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s # How often to scrape metrics
+  evaluation_interval: 15s
+
+scrape_configs:
+  # -----------------------------------------------
+  # Job 1: TIBCO EMS Metrics (Port 7220)
+  # -----------------------------------------------
+  - job_name: 'tibco_ems'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: 
+        - 'ftlserver1:7220'
+        - 'ftlserver2:7220'
+        - 'ftlserver3:7220'
+
+  # -----------------------------------------------
+  # Job 2: TIBCO FTL Metrics (Port 8585)
+  # -----------------------------------------------
+  - job_name: 'tibco_ftl'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: 
+        - 'ftlserver1:8585'
+        - 'ftlserver2:8585'
+        - 'ftlserver3:8585'
+
+  # -----------------------------------------------
+  # Job 3: TIBCO RV Metrics (Port 7580)
+  # -----------------------------------------------
+  - job_name: 'tibco_rv'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: 
+        # Scrape both the listener and sender RV daemons
+        - 'rv-listener:7580'
+        - 'rv-sender:7580'

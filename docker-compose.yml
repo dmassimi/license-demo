@@ -1,0 +1,120 @@
+services:
+  # =========================================
+  # FTL / EMS Nodes
+  # =========================================
+  ftlserver1:
+    image: ems-ftl:10.4.1
+    container_name: ftlserver1
+    ports:
+      - "8585:8585"
+      - "7522:7222"
+      - "7520:7220"
+    volumes:
+      - C:\Users\dmassimi\containers\resources\addons\ftl:/data/ftl
+      - C:\temp:/tmp
+      - C:\Users\dmassimi\containers\resources\addons\license:/data/license
+    environment:
+      - TIBFTL_LICENSE=/data/license/dmassimi-vdi_ANY.bin
+      - LD_LIBRARY_PATH=/usr/lib64:/opt/tibco/ems/10.4/lib:/opt/tibco/ftl/7.2/lib
+    command: ["-c", "/data/ftl/tibftlserver_cluster.yaml", "-n", "ftlserver1"]
+    networks:
+      - tibco-network
+
+  ftlserver2:
+    image: ems-ftl:10.4.1
+    container_name: ftlserver2
+    ports:
+      - "8685:8585"
+      - "7622:7222"
+      - "7620:7220"
+    volumes:
+      - C:\Users\dmassimi\containers\resources\addons\ftl:/data/ftl
+      - C:\temp:/tmp
+      - C:\Users\dmassimi\containers\resources\addons\license:/data/license
+    environment:
+      - TIBFTL_LICENSE=/data/license/dmassimi-vdi_ANY.bin
+      - LD_LIBRARY_PATH=/usr/lib64:/opt/tibco/ems/10.4/lib:/opt/tibco/ftl/7.2/lib
+    command: ["-c", "/data/ftl/tibftlserver_cluster.yaml", "-n", "ftlserver2"]
+    networks:
+      - tibco-network
+
+  ftlserver3:
+    image: ems-ftl:10.4.1
+    container_name: ftlserver3
+    ports:
+      - "8785:8585"
+      - "7722:7222"
+      - "7720:7220"
+    volumes:
+      - C:\Users\dmassimi\containers\resources\addons\ftl:/data/ftl
+      - C:\temp:/tmp
+      - C:\Users\dmassimi\containers\resources\addons\license:/data/license
+    environment:
+      - TIBFTL_LICENSE=/data/license/dmassimi-vdi_ANY.bin
+      - LD_LIBRARY_PATH=/usr/lib64:/opt/tibco/ems/10.4/lib:/opt/tibco/ftl/7.2/lib
+    command: ["-c", "/data/ftl/tibftlserver_cluster.yaml", "-n", "ftlserver3"]
+    networks:
+      - tibco-network
+      
+  rv-listener:
+    image: tibco-rv:9.0.0
+    container_name: rv-listener
+    ports:
+      - "7580:7580" # Maps local 7580 to container 7580
+    volumes:
+      - C:\Users\dmassimi\containers\resources\addons\license:/data/license
+    environment:
+      - TIBRV_LICENSE=file:///data/license/dmassimi-vdi_ANY.bin
+    command: >
+      bash -c "rvd -listen tcp:7500 -http 7580 & sleep 2 && tibrvlisten -service 7500 -network ';' -daemon tcp:7500 TEST.SUBJECT"
+    networks:
+      - tibco-network
+
+  rv-sender:
+    image: tibco-rv:9.0.0
+    container_name: rv-sender
+    ports:
+      - "7581:7580" # Maps local 7581 to container 7580 to avoid collision
+    volumes:
+      - C:\Users\dmassimi\containers\resources\addons\license:/data/license
+    environment:
+      - TIBRV_LICENSE=file:///data/license/dmassimi-vdi_ANY.bin
+    command: >
+      bash -c "rvd -listen tcp:7500 -http 7580 & sleep 5; while true; do tibrvsend -service 7500 -network ';' -daemon tcp:7500 TEST.SUBJECT 'Hello from TIBCO RV 9.0.0 inside Docker!'; sleep 10; done"
+    networks:
+      - tibco-network
+    depends_on:
+      - rv-listener
+
+  # =========================================
+  # Monitoring Stack
+  # =========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      # Mount the configuration file from your host to the container
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - tibco-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - tibco-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+networks:
+  tibco-network:
+    driver: bridge
