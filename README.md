@@ -90,7 +90,26 @@ docker-compose -f docker-compose.yml up -d
 
 *Note: `license-dashboard.json` is delivered as a sample to be imported to Grafana after the start of all containers.*
 
+### 📈 Dashboard PromQL Rules
+The imported dashboard visualizes the expiration metrics using specific PromQL queries. Because TIBCO attaches many internal labels (like ComponentID or RealmID) to a single metric, querying the raw metric name will result in duplicate dashboard rows.
 
+To fix this, the dashboard relies on the max by (instance) aggregation function to collapse the metrics cleanly down to one row per container.
+
+**TIBCO EMS License Expiration:**
+
+```bash
+max by (instance) (tibco_ems_server_license_expiration_seconds)
+```
+
+**TIBCO FTL License Expiration:**
+```bash
+max by (instance) (tibco_ftl_server_license_expiration_seconds)
+```
+
+**TIBCO Rendezvous Lease Expiration:**
+```bash
+max by (instance) (tibco_rv_lease_expiration_seconds)
+```
 
 ![Screen](./img/dashboard.png)
 
